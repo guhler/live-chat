@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 func initDB() error {
@@ -19,23 +18,22 @@ func initDB() error {
 }
 
 func addUser(db *sql.DB, name string, password string) error {
-	// WARN: sql injection, use prepared statement, name and password could contain quotes
-	_, err := db.Exec(fmt.Sprintf("insert into users (name, password) values ('%s', '%s')", name, password))
+	_, err := db.Exec("insert into users (name, password) values (?, ?)", name, password)
 	return err
 }
 
 func logoutUser(db *sql.DB, name string) error {
-	_, err := db.Exec(fmt.Sprintf("update users set logout_time = datetime('now') where name = '%s'", name))
+	_, err := db.Exec("update users set logout_time = datetime('now') where name = ?", name)
 	return err
 }
 
 func addRoom(db *sql.DB, name string) error {
-	_, err := db.Exec(fmt.Sprintf("insert into rooms (name) values ('%s')", name))
+	_, err := db.Exec("insert into rooms (name) values (?)", name)
 	return err
 }
 
 func addUserToRoom(db *sql.DB, room_id int64, user_id int64) error {
-	_, err := db.Exec(fmt.Sprintf("insert into room_user (user_id, room_id) values ('%d', '%d')", user_id, room_id))
+	_, err := db.Exec("insert into room_user (user_id, room_id) values (?, ?)", user_id, room_id)
 	return err
 }
 
@@ -46,7 +44,7 @@ const (
 )
 
 func validateCredentials(db *sql.DB, name, password string) int {
-	row := db.QueryRow(fmt.Sprintf("select password from users where name = '%s'", name))
+	row := db.QueryRow("select password from users where name = ?", name)
 	passwd := ""
 	err := row.Scan(&passwd)
 	if err != nil {

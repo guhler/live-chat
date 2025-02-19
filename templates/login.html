@@ -4,9 +4,10 @@
 <head>
     <title>Login - Live Chat</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-response-targets@2.0.2" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body hx-ext="response-targets">
     <h1>Login</h1>
     <form>
         <label for="username-input">User Name</label>
@@ -15,7 +16,8 @@
         <label for="password-input">Password</label>
         <input id="password-input" type="text" name="password">
         <br>
-        <button hx-post="/login" hx-swap="none">Submit</button>
+        <button hx-post="/login" hx-target-error="#status" hx-swap="innerHTML">Submit</button>
+        <p id="status"></p>
     </form>
 </body>
 

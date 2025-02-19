@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -38,24 +37,30 @@ func routeRegister(e *echo.Echo) error {
 		regReq := registerRequest{}
 		err := c.Bind(&regReq)
 		if err != nil {
-			return c.JSON(
+			return c.HTML(
 				http.StatusBadRequest,
-				map[string]any{"error": "Bad Request"},
+				"Bad Request",
 			)
 		}
 
 		if i := validateUserName(regReq.Name); i != -1 {
-			return c.JSON(
+			bad_char := string(regReq.Name[i])
+			if bad_char == " " {
+				bad_char = "spaces"
+			}
+			return c.HTML(
 				http.StatusBadRequest,
-				// TODO: add special case for spaces
-				map[string]any{"error": "User name cannot contain " + string(regReq.Name[i])},
+				"User name cannot contain "+bad_char,
 			)
 		}
 		if i := validatePassword(regReq.Password); i != -1 {
-			return c.JSON(
+			bad_char := string(regReq.Name[i])
+			if bad_char == " " {
+				bad_char = "spaces"
+			}
+			return c.HTML(
 				http.StatusBadRequest,
-				// TODO: add special case for spaces
-				map[string]any{"error": "Password cannot contain " + string(regReq.Password[i])},
+				"Password cannot contain "+bad_char,
 			)
 		}
 
@@ -63,17 +68,31 @@ func routeRegister(e *echo.Echo) error {
 		if err != nil {
 			if sqliteErr, ok := err.(sqlite3.Error); ok &&
 				sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-				return c.JSON(
+				return c.HTML(
 					http.StatusConflict,
-					map[string]any{"error": "User name already exists"},
+					"User name already exists",
 				)
 			}
 			return err
 		}
 
-		return c.JSON(
+		tk, err := genToken(regReq.Name)
+		if err != nil {
+			return err
+		}
+		c.SetCookie(&http.Cookie{
+			Name:     "auth-token",
+			Value:    tk,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
+		c.Response().Header().Add("HX-Redirect", "/")
+
+		return c.HTML(
 			http.StatusCreated,
-			map[string]any{},
+			"User created",
 		)
 	})
 
@@ -95,28 +114,28 @@ func routeLogin(e *echo.Echo) error {
 		}
 
 		if i := validateUserName(logReq.Name); i != -1 {
-			return c.JSON(
+			return c.HTML(
 				http.StatusBadRequest,
-				map[string]any{"error": "User name cannot contain " + string(logReq.Name[i])},
+				"User name cannot contain "+string(logReq.Name[i]),
 			)
 		}
 		if i := validatePassword(logReq.Password); i != -1 {
-			return c.JSON(
+			return c.HTML(
 				http.StatusBadRequest,
-				map[string]any{"error": "Password cannot contain " + string(logReq.Password[i])},
+				"Password cannot contain "+string(logReq.Password[i]),
 			)
 		}
 
 		switch validateCredentials(DB, logReq.Name, logReq.Password) {
 		case USER_DOES_NOT_EXIST:
-			return c.JSON(
+			return c.HTML(
 				http.StatusNotFound,
-				map[string]any{"error": "User does not exist"},
+				"User does not exist",
 			)
 		case INVALID_PASSWORD:
-			return c.JSON(
+			return c.HTML(
 				http.StatusUnauthorized,
-				map[string]any{"error": "Invalid password"},
+				"Invalid password",
 			)
 		case OK:
 			tk, err := genToken(logReq.Name)
@@ -144,9 +163,9 @@ func routeLogout(e *echo.Echo) error {
 	e.POST("/logout", func(c echo.Context) error {
 		un := c.Get("authorized_user")
 		if un == nil {
-			return c.JSON(
+			return c.HTML(
 				http.StatusUnauthorized,
-				map[string]any{"error": "Not logged in"},
+				"Not logged in",
 			)
 		}
 		username := un.(string)
@@ -158,12 +177,13 @@ func routeLogout(e *echo.Echo) error {
 
 		c.Response().Header().Add("HX-Redirect", "/")
 		c.SetCookie(&http.Cookie{
-			Name:  "auth_token",
-			Value: "",
+			Name:   "auth-token",
+			Path:   "/",
+			MaxAge: -1,
 		})
-		return c.JSON(
+		return c.HTML(
 			http.StatusCreated,
-			map[string]any{"info": "Logged out"},
+			"Logged out",
 		)
 	})
 	return nil
@@ -173,6 +193,7 @@ func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cookie, err := c.Cookie("auth-token")
 		if err != nil {
+			c.Logger().Error(err)
 			return next(c)
 		}
 
@@ -195,9 +216,6 @@ func genToken(username string) (string, error) {
 		Subject:   username,
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(token_expiry_time)),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ID:        "0",
-		Audience:  jwt.ClaimStrings{},
-		NotBefore: jwt.NewNumericDate(time.Now().UTC()),
 	})
 
 	return tk.SignedString(jwtSecret)
@@ -213,7 +231,7 @@ func validateToken(tkString string) (string, error) {
 	}
 
 	if claims, ok := tk.Claims.(*jwt.RegisteredClaims); ok && tk.Valid {
-		row := DB.QueryRow(fmt.Sprintf("select logout_time from users where name = '%s'", claims.Subject))
+		row := DB.QueryRow("select logout_time from users where name = ?", claims.Subject)
 		var logout_time time.Time
 		err := row.Scan(&logout_time)
 		if err != nil {

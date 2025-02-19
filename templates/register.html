@@ -4,16 +4,20 @@
 <head>
     <title>Register - Live Chat</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-response-targets@2.0.2" crossorigin="anonymous"></script>
 </head>
 
-<body>
+<body hx-ext="response-targets">
     <h1>Register</h1>
     <form>
         <label for="username-input">User Name</label>
         <input id="username-input" type="text" name="username">
+        <br>
         <label for="password-input">Password</label>
         <input id="password-input" type="text" name="password">
-        <button hx-post="/register" hx-swap="none">Submit</button>
+        <br>
+        <button hx-post="/register" hx-target-error="#status" hx-swap="innerHTML">Submit</button>
+        <p id="status"></p>
     </form>
 </body>
 
