@@ -4,6 +4,7 @@
 
 <head>
     <title>Live Chat</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 
 <body>
@@ -11,6 +12,7 @@
         <h4>Rooms</h4>
     </div>
     <h1>Welcome to the live chat</h1>
+    <p hx-trigger="click" hx-post="/logout">logout</p>
 
 </body>
 

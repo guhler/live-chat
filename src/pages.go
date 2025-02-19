@@ -24,3 +24,10 @@ func routeLoginPage(e *echo.Echo) error {
 	})
 	return nil
 }
+
+func routeRegisterPage(e *echo.Echo) error {
+	e.GET("/register", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "register.html", nil)
+	})
+	return nil
+}

@@ -20,6 +20,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = initAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	e := echo.New()
 
@@ -43,6 +47,14 @@ func main() {
 		log.Fatal(err)
 	}
 	err = routeLoginPage(e)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = routeRegisterPage(e)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = routeLogout(e)
 	if err != nil {
 		log.Fatal(err)
 	}

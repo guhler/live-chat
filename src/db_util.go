@@ -19,7 +19,13 @@ func initDB() error {
 }
 
 func addUser(db *sql.DB, name string, password string) error {
+	// WARN: sql injection, use prepared statement, name and password could contain quotes
 	_, err := db.Exec(fmt.Sprintf("insert into users (name, password) values ('%s', '%s')", name, password))
+	return err
+}
+
+func logoutUser(db *sql.DB, name string) error {
+	_, err := db.Exec(fmt.Sprintf("update users set logout_time = datetime('now') where name = '%s'", name))
 	return err
 }
 
