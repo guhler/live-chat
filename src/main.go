@@ -23,20 +23,31 @@ func main() {
 
 	e := echo.New()
 
-	e.Use(middleware.Logger())
-	e.Static("", "./static")
+	initTempl(e)
 
-	err = route_register(e)
+	e.Use(middleware.Logger())
+	e.Use(authMiddleware)
+	e.Static("/static", "./static")
+
+	err = routeRegister(e)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = route_login(e)
+	err = routeLogin(e)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = routeIndex(e)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = routeLoginPage(e)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = e.Start(":8080")
-
 	if err != nil {
 		log.Fatal(err)
 	}
