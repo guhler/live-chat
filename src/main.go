@@ -42,10 +42,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = routeIndex(e)
-	if err != nil {
-		log.Fatal(err)
-	}
+	e.GET("/", getIndex)
+	e.Add(getRoomMessages())
+	e.Add(postRoomMessage())
+	e.POST("/rooms", postRooms)
+
 	err = routeLoginPage(e)
 	if err != nil {
 		log.Fatal(err)

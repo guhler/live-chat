@@ -1,7 +1,32 @@
 package main
 
 func validateUserName(name string) int {
-	for i, c := range name {
+	if len(name) < 3 {
+		return len(name)
+	}
+
+	return alphaNumUnderscoreMinus(name)
+}
+
+func validatePassword(password string) int {
+	for i := 0; i < len(password); i++ {
+		if password[i] <= 32 || password[i] >= 127 {
+			return i
+		}
+	}
+	return -1
+}
+
+func validateRoomName(name string) int {
+	if len(name) == 0 {
+		return 0
+	}
+
+	return alphaNumUnderscoreMinus(name)
+}
+
+func alphaNumUnderscoreMinus(s string) int {
+	for i, c := range s {
 		if c >= 'a' && c <= 'z' {
 			continue
 		}
@@ -15,15 +40,6 @@ func validateUserName(name string) int {
 			continue
 		}
 		return i
-	}
-	return -1
-}
-
-func validatePassword(password string) int {
-	for i := 0; i < len(password); i++ {
-		if password[i] <= 32 || password[i] >= 127 {
-			return i
-		}
 	}
 	return -1
 }

@@ -1,108 +1,229 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <title>Live Chat</title>
+    <meta name="htmx-config" content='{"responseTargetUnsetsError": false}' />
+
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="https://unpkg.com/htmx-ext-response-targets@2.0.2" crossorigin="anonymous"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/hx-response-targets.js"></script>
+    <script src="/static/hx-response-swap.js"></script>
+    <link rel="stylesheet" href="/static/output.css" />
     <script>
-        function toggleNav(elem) {
-            const nav = document.getElementById("sidebar");
-            if (nav.getAttribute("open") != null) {
-                nav.style.marginLeft = (-1 * nav.offsetWidth) + "px";
-                elem.style.translate = "4rem 0";
-                elem.children[0].textContent = "›";
-                nav.removeAttribute("open");
-            } else {
-                nav.style.marginLeft = "0";
-                elem.style.translate = "0 0";
-                elem.children[0].textContent = "‹";
-                nav.setAttribute("open", "");
-            }
+      function toggleNav(elem) {
+        const nav = document.getElementById("sidebar");
+        if (nav.getAttribute("open") != null) {
+          nav.style.marginLeft = -1 * nav.offsetWidth + "px";
+          elem.style.translate = "0 0";
+          elem.children[0].textContent = "›";
+          nav.removeAttribute("open");
+        } else {
+          nav.style.marginLeft = "0";
+          elem.style.translate = "-4.5rem 0";
+          elem.children[0].textContent = "‹";
+          nav.setAttribute("open", "");
         }
+      }
+
+      function setSelected(elem) {
+        const selected = document.querySelector(".selected");
+        if (selected) {
+          selected.classList.remove("selected", "dark:bg-neutral-800");
+          selected.classList.add("dark:bg-neutral-700");
+        }
+        elem.classList.remove("dark:bg-neutral-700");
+        elem.classList.add("selected", "dark:bg-neutral-800");
+      }
     </script>
-</head>
+  </head>
 
-<body class="dark:text-white">
-
+  <body hx-ext="response-targets,response-swap" class="dark:text-white">
     <div class="flex flex-row h-screen dark:bg-neutral-800">
-
-        <nav id="sidebar" open
-            class="hidden md:flex flex-col w-64 h-full overflow-y-scroll bg-neutral-100 dark:bg-neutral-900 transition-all ease-in-out pt-3">
-
-            <div class="w-full h-min mt-1 mb-2 flex justify-around items-center overflow-x-visible">
-                <div class="w-10 h-10 "></div>
-                <h2 class="w-min text-2xl font-bold">Rooms</h2>
-                <div class="w-10 h-10 "></div>
-            </div>
-
-            <ul class="w-full flex-1 px-2">
-                {{- define "room-btn" -}}
-                <li hx-get="/api/hx/rooms/{{ .ID }}" hx-target="" hx-swap="innerHTML"
-                    class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 flex flex-row justify-between cursor-pointer border-2 border-neutral-200 dark:border-neutral-800">
-                    <span title="{{ .RoomName }}">{{ .RoomName }}</span>
-                    <div
-                        class="w-[1.5rem] h-[1.5rem] rounded-full hover:bg-neutral-300 dark:hover:bg-neutral-700 text-md text-center">
-                        <button class="">&#xfe19;</button>
-                    </div>
-                </li>
-                {{- end }}
-                {{ range .Rooms }}
-                {{ template "room-btn" . }}
-                {{ end -}}
-            </ul>
-        </nav>
-        <div class="flex-1 flex flex-col justify-between items-center h-full pt-3">
-            <nav class="flex flex-row justify-between w-full px-3 pb-3">
-                <div
-                    class="translate-x-[-4rem] transition-all w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-700 cursor-pointer text-4xl text-center">
-                    <button class="w-full h-full translate-y-[-.25rem]"
-                        onclick="toggleNav(this.parentElement)">&lsaquo;</button>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-bold">{{ .Title }}</h1>
-                </div>
-                <div hx-post="/logout" title="Logout"
-                    class="pl-3 pr-2 py-1 bg-neutral-200 dark:bg-neutral-700 cursor-pointer rounded-xl flex justify-center align-center">
-                    <button><svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-                            xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="3"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9" />
-                            <path d="M19 12H9m5-5l5 5-5 5" />
-                        </svg></button>
-                </div>
-            </nav>
-            <div id="chat-content" class="flex-1 w-100">
-                {{ define "message" }}
-                <p class="text-lg">
-                    <span class="text-neutral-400">
-                        {{- .UserName -}}:&nbsp;
-                    </span><span>
-                        {{- .Content -}}
-                    </span>
-                </p>
-                {{ end }}
-
-                {{ range .Messages }}
-                {{ template "message" . }}
-                {{ end }}
-            </div>
-            <div class="flex justify-center items-center w-full px-10">
-                <div class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700">
-                    <textarea
-                        class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
-                        placeholder="Type a message..."></textarea>
-                    <div class="flex flex-row w-full justify-between p-2">
-                        <div class="w-10 h-10"></div>
-                        <div class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-700"><button
-                                class="rotate-[270deg] translate-x-[.2rem] translate-y-[.2rem] text-3xl">➜</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <nav
+        id="sidebar"
+        open
+        class="hidden md:flex flex-col w-64 h-fullbg-neutral-100 dark:bg-neutral-900 transition-all ease-in-out pt-3"
+      >
+        <div
+          class="w-full h-min mt-1 mb-2 flex justify-around items-center overflow-x-visible"
+        >
+          <div class="w-10 h-10"></div>
+          <h2 class="w-min text-2xl font-bold">Rooms</h2>
+          <div class="w-10 h-10"></div>
         </div>
-    </div>
-</body>
 
+        <ul
+          class="w-full flex-1 px-2 overflow-y-scroll scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900"
+        >
+          <li
+            class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-800"
+          >
+            <form
+              hx-post="/rooms"
+              hx-target="closest ul"
+              hx-swap="beforeend"
+              hx-target-error="#new-room-status"
+              hx-swap-error="outerHTML"
+              hx-on::after-request="if (event.detail.successful) { this.reset() }"
+              class="flex flex-row justify-between"
+            >
+              <input
+                type="text"
+                name="room-name"
+                placeholder="New room"
+                class="flex-1 min-w-0 bg-transparent focus:outline-none"
+              />
+              <div
+                class="flex justify-center items-center w-[1.5rem] h-[1.5rem] rounded-full hover:bg-neutral-300 dark:hover:bg-neutral-700 text-2xl"
+              >
+                <button type="submit" class="-translate-y-[2px]">
+                  &#xff0b;
+                </button>
+              </div>
+            </form>
+            <p id="new-room-status" class="hidden"></p>
+          </li>
+          {{ define "index_auth/clear-new-room-status" }}
+          <p id="new-room-status" hx-swap-oob="true" class="hidden"></p>
+          {{ end }} {{ define "index_auth/new-room-error" }}
+          <p id="new-room-status" class="text-red-600 font-extrabold">
+            {{ . }}
+          </p>
+          {{ end }}
+          <!-- prettier-ignore -->
+          {{ define "index_auth/room-btn-response" }}
+            {{ template "index_auth/room-btn" . }} 
+            {{ template "index_auth/clear-new-room-status" }}
+          {{ end }} 
+
+          {{ define "index_auth/room-btn" }}
+          <li
+            onclick="setSelected(this)"
+            hx-get="/rooms/{{ .ID }}/messages?start=0&count=40"
+            hx-target="#chat-content"
+            hx-swap="innerHTML"
+            hx-swap-error="none"
+            class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 flex flex-row justify-between cursor-pointer border-2 border-neutral-200 dark:border-neutral-800"
+          >
+            <span class="select-none">{{ .Name }}</span>
+            <div
+              class="w-[1.5rem] h-[1.5rem] rounded-full hover:bg-neutral-300 dark:hover:bg-neutral-700 text-md text-center"
+            >
+              <button class="">&#xfe19;</button>
+            </div>
+          </li>
+          {{ end }}
+          <!-- prettier-ignore -->
+          {{ range .Rooms }} 
+          {{ template "index_auth/room-btn" . }}
+          {{ end }}
+        </ul>
+      </nav>
+      <div class="relative w-0 h-0">
+        <div
+          style="translate: -4.5rem 0"
+          class="absolute top-[1rem] left-[1rem] transition-all w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-700 cursor-pointer text-4xl text-center"
+        >
+          <button
+            class="w-full h-full translate-y-[-.25rem]"
+            onclick="toggleNav(this.parentElement)"
+          >
+            &lsaquo;
+          </button>
+        </div>
+      </div>
+      <div
+        class="flex-1 flex flex-col justify-between items-center h-full pt-3"
+      >
+        <nav class="flex flex-row justify-between w-full px-3 pb-3">
+          <div class="w-10 h-10"></div>
+          <div>
+            <h1 class="text-3xl font-bold">{{ .Title }}</h1>
+          </div>
+          <div
+            hx-post="/logout"
+            title="Logout"
+            class="pl-3 pr-2 py-1 bg-neutral-200 dark:bg-neutral-700 cursor-pointer rounded-xl flex justify-center align-center"
+          >
+            <button>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9" />
+                <path d="M19 12H9m5-5l5 5-5 5" />
+              </svg>
+            </button>
+          </div>
+        </nav>
+        <div
+          id="chat-content"
+          class="flex-1 flex flex-col-reverse w-100 overflow-y-scroll scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
+        >
+          {{ define "index_auth/message" }}
+          <p class="text-lg">
+            <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+            <span>{{ .Content }}</span>
+          </p>
+          {{ end }}
+          {{ define "index_auth/chat-content" }}
+          <!-- prettier-ignore -->
+          <span hidden
+            hx-trigger="intersect once" 
+            hx-get="/rooms/{{ .RoomId }}/messages?start={{ .NextStart }}&count=20" 
+            hx-target="#chat-content" 
+            hx-swap="beforestart"></span>
+          <!-- prettier-ignore -->
+          {{ range .Messages }} 
+            {{ template "index_auth/message" . }} 
+          {{ end }}
+          {{ end }} 
+          {{ define "index_auth/room-response" }} 
+            {{ template "index_auth/chat-content" . }} 
+            {{ template "index_auth/send-box" . }}
+          {{ end }}
+        </div>
+        <div class="flex justify-center items-center w-full px-10">
+          <form id="send-box" hidden></form>
+          {{ define "index_auth/send-box" }}
+          <form
+            id="send-box"
+            hx-swap-oob="true"
+            hx-post="/rooms/{{ .RoomId }}/messages"
+            hx-target="#chat-content"
+            hx-swap="beforeend"
+            hx-swap-error="none"
+            hx-on::after-request="if (event.detail.successful) { this.reset() }"
+            class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700"
+          >
+            <textarea
+              name="message-content"
+              class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+              placeholder="Type a message..."
+            ></textarea>
+            <div class="flex flex-row w-full justify-between p-2">
+              <div class="w-10 h-10"></div>
+              <div
+                class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-800 cursor-pointer"
+              >
+                <button
+                  type="submit"
+                  class="-rotate-90 translate-x-[.22rem] translate-y-[.2rem] text-3xl cursor-pointer"
+                >
+                  &#x279c;
+                </button>
+              </div>
+            </div>
+          </form>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

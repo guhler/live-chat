@@ -114,27 +114,31 @@ func routeLogin(e *echo.Echo) error {
 		}
 
 		if i := validateUserName(logReq.Name); i != -1 {
-			return c.HTML(
-				http.StatusBadRequest,
-				"User name cannot contain "+string(logReq.Name[i]),
+			return c.Render(
+				http.StatusNotFound,
+				"login/error",
+				"User does not exist",
 			)
 		}
 		if i := validatePassword(logReq.Password); i != -1 {
-			return c.HTML(
-				http.StatusBadRequest,
-				"Password cannot contain "+string(logReq.Password[i]),
+			return c.Render(
+				http.StatusUnauthorized,
+				"login/error",
+				"Invalid password",
 			)
 		}
 
 		switch validateCredentials(DB, logReq.Name, logReq.Password) {
 		case USER_DOES_NOT_EXIST:
-			return c.HTML(
+			return c.Render(
 				http.StatusNotFound,
+				"login/error",
 				"User does not exist",
 			)
 		case INVALID_PASSWORD:
-			return c.HTML(
+			return c.Render(
 				http.StatusUnauthorized,
+				"login/error",
 				"Invalid password",
 			)
 		case OK:
@@ -151,7 +155,7 @@ func routeLogin(e *echo.Echo) error {
 				SameSite: http.SameSiteStrictMode,
 			})
 			c.Response().Header().Add("HX-Redirect", "/")
-			return c.HTML(http.StatusOK, "")
+			return c.String(http.StatusOK, "")
 		}
 		return nil
 	})
@@ -193,14 +197,20 @@ func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cookie, err := c.Cookie("auth-token")
 		if err != nil {
-			c.Logger().Error(err)
+			if err != echo.ErrCookieNotFound {
+				c.Logger().Warn("Cookie Error: ", err)
+			}
 			return next(c)
 		}
 
 		tk := cookie.Value
 		username, err := validateToken(tk)
-		if err != nil || username == "" {
-			c.Logger().Warn("Error: ", err)
+		if err != nil {
+			c.Logger().Warn("Failed to validate Token: ", err)
+			return next(c)
+		}
+		if validateUserName(username) != -1 {
+			c.Logger().Warn("Parsed invalid user name from Token: ", username)
 			return next(c)
 		}
 

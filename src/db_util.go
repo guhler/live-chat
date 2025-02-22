@@ -27,14 +27,35 @@ func logoutUser(db *sql.DB, name string) error {
 	return err
 }
 
-func addRoom(db *sql.DB, name string) error {
-	_, err := db.Exec("insert into rooms (name) values (?)", name)
+func addRoom(db *sql.DB, name string) (roomId int64, err error) {
+	res, err := db.Exec("insert into rooms (name) values (?)", name)
+	if err != nil {
+		return
+	}
+	roomId, err = res.LastInsertId()
+	return
+}
+
+func addUserToRoom(db *sql.DB, roomId int64, userName string) error {
+	_, err := db.Exec(`
+		insert into room_user (user_id, room_id) 
+		values ((select id from users where name = ?), ?)`,
+		userName, roomId,
+	)
 	return err
 }
 
-func addUserToRoom(db *sql.DB, room_id int64, user_id int64) error {
-	_, err := db.Exec("insert into room_user (user_id, room_id) values (?, ?)", user_id, room_id)
-	return err
+func isUserInRoom(db *sql.DB, userName string, roomId int64) (bool, error) {
+	rows, err := db.Query(`
+		select null from room_user
+		where room_id = ? and user_id = (select id from users where name = ?)`,
+		roomId, userName,
+	)
+	defer rows.Close()
+	if err != nil {
+		return false, err
+	}
+	return rows.Next(), nil
 }
 
 const (
