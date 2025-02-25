@@ -31,9 +31,8 @@ type registerRequest struct {
 	Password string `form:"password"`
 }
 
-func routeRegister(e *echo.Echo) error {
-
-	e.POST("/register", func(c echo.Context) error {
+func routeRegister() (string, string, echo.HandlerFunc) {
+	return "POST", "/register", func(c echo.Context) error {
 		regReq := registerRequest{}
 		err := c.Bind(&regReq)
 		if err != nil {
@@ -94,9 +93,7 @@ func routeRegister(e *echo.Echo) error {
 			http.StatusCreated,
 			"User created",
 		)
-	})
-
-	return nil
+	}
 }
 
 type loginRequest struct {
@@ -104,9 +101,8 @@ type loginRequest struct {
 	Password string `form:"password"`
 }
 
-func routeLogin(e *echo.Echo) error {
-
-	e.POST("/login", func(c echo.Context) error {
+func routeLogin() (string, string, echo.HandlerFunc) {
+	return "POST", "/login", func(c echo.Context) error {
 		logReq := loginRequest{}
 		err := c.Bind(&logReq)
 		if err != nil {
@@ -158,13 +154,11 @@ func routeLogin(e *echo.Echo) error {
 			return c.String(http.StatusOK, "")
 		}
 		return nil
-	})
-
-	return nil
+	}
 }
 
-func routeLogout(e *echo.Echo) error {
-	e.POST("/logout", func(c echo.Context) error {
+func routeLogout() (string, string, echo.HandlerFunc) {
+	return "POST", "/logout", func(c echo.Context) error {
 		un := c.Get("authorized_user")
 		if un == nil {
 			return c.HTML(
@@ -189,8 +183,7 @@ func routeLogout(e *echo.Echo) error {
 			http.StatusCreated,
 			"Logged out",
 		)
-	})
-	return nil
+	}
 }
 
 func authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

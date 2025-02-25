@@ -6,16 +6,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func routeLoginPage(e *echo.Echo) error {
-	e.GET("/login", func(c echo.Context) error {
+func routeLoginPage() (string, string, echo.HandlerFunc) {
+	return "GET", "/login", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "login.html", nil)
-	})
-	return nil
+	}
 }
 
-func routeRegisterPage(e *echo.Echo) error {
-	e.GET("/register", func(c echo.Context) error {
+func routeRegisterPage() (string, string, echo.HandlerFunc) {
+	return "GET", "/register", func(c echo.Context) error {
 		return c.Render(http.StatusOK, "register.html", nil)
-	})
-	return nil
+	}
 }

@@ -5,6 +5,9 @@
     <meta name="htmx-config" content='{"responseTargetUnsetsError": false}' />
 
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+    <!-- <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.js"></script> -->
+    <!-- <script src="https://unpkg.com/htmx-ext-ws/dist/ws.js"></script> -->
     <script src="/static/hx-response-targets.js"></script>
     <script src="/static/hx-response-swap.js"></script>
     <link rel="stylesheet" href="/static/output.css" />
@@ -36,7 +39,8 @@
     </script>
   </head>
 
-  <body hx-ext="response-targets,response-swap" class="dark:text-white">
+  <body hx-ext="ws, response-targets, response-swap" class="dark:text-white">
+    <div id="ws-connector"></div>
     <div class="flex flex-row h-screen dark:bg-neutral-800">
       <nav
         id="sidebar"
@@ -52,7 +56,7 @@
         </div>
 
         <ul
-          class="w-full flex-1 px-2 overflow-y-scroll scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900"
+          class="w-full flex-1 px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900"
         >
           <li
             class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-800"
@@ -82,40 +86,7 @@
             </form>
             <p id="new-room-status" class="hidden"></p>
           </li>
-          {{ define "index_auth/clear-new-room-status" }}
-          <p id="new-room-status" hx-swap-oob="true" class="hidden"></p>
-          {{ end }} {{ define "index_auth/new-room-error" }}
-          <p id="new-room-status" class="text-red-600 font-extrabold">
-            {{ . }}
-          </p>
-          {{ end }}
-          <!-- prettier-ignore -->
-          {{ define "index_auth/room-btn-response" }}
-            {{ template "index_auth/room-btn" . }} 
-            {{ template "index_auth/clear-new-room-status" }}
-          {{ end }} 
-
-          {{ define "index_auth/room-btn" }}
-          <li
-            onclick="setSelected(this)"
-            hx-get="/rooms/{{ .ID }}/messages?start=0&count=40"
-            hx-target="#chat-content"
-            hx-swap="innerHTML"
-            hx-swap-error="none"
-            class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 flex flex-row justify-between cursor-pointer border-2 border-neutral-200 dark:border-neutral-800"
-          >
-            <span class="select-none">{{ .Name }}</span>
-            <div
-              class="w-[1.5rem] h-[1.5rem] rounded-full hover:bg-neutral-300 dark:hover:bg-neutral-700 text-md text-center"
-            >
-              <button class="">&#xfe19;</button>
-            </div>
-          </li>
-          {{ end }}
-          <!-- prettier-ignore -->
-          {{ range .Rooms }} 
-          {{ template "index_auth/room-btn" . }}
-          {{ end }}
+          {{ range .Rooms }} {{ template "index_auth/room-btn" . }} {{ end }}
         </ul>
       </nav>
       <div class="relative w-0 h-0">
@@ -124,7 +95,7 @@
           class="absolute top-[1rem] left-[1rem] transition-all w-10 h-10 rounded-xl bg-neutral-200 dark:bg-neutral-700 dark:hover:bg-neutral-700 cursor-pointer text-4xl text-center"
         >
           <button
-            class="w-full h-full translate-y-[-.25rem]"
+            class="cursor-pointer w-full h-full translate-y-[-.25rem]"
             onclick="toggleNav(this.parentElement)"
           >
             &lsaquo;
@@ -164,66 +135,128 @@
         </nav>
         <div
           id="chat-content"
-          class="flex-1 flex flex-col-reverse w-100 overflow-y-scroll scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
-        >
-          {{ define "index_auth/message" }}
-          <p class="text-lg">
-            <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
-            <span>{{ .Content }}</span>
-          </p>
-          {{ end }}
-          {{ define "index_auth/chat-content" }}
-          <!-- prettier-ignore -->
-          <span hidden
-            hx-trigger="intersect once" 
-            hx-get="/rooms/{{ .RoomId }}/messages?start={{ .NextStart }}&count=20" 
-            hx-target="#chat-content" 
-            hx-swap="beforestart"></span>
-          <!-- prettier-ignore -->
-          {{ range .Messages }} 
-            {{ template "index_auth/message" . }} 
-          {{ end }}
-          {{ end }} 
-          {{ define "index_auth/room-response" }} 
-            {{ template "index_auth/chat-content" . }} 
-            {{ template "index_auth/send-box" . }}
-          {{ end }}
-        </div>
+          class="flex-1 flex flex-col-reverse w-full overflow-y-scroll scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
+        ></div>
         <div class="flex justify-center items-center w-full px-10">
           <form id="send-box" hidden></form>
-          {{ define "index_auth/send-box" }}
-          <form
-            id="send-box"
-            hx-swap-oob="true"
-            hx-post="/rooms/{{ .RoomId }}/messages"
-            hx-target="#chat-content"
-            hx-swap="beforeend"
-            hx-swap-error="none"
-            hx-on::after-request="if (event.detail.successful) { this.reset() }"
-            class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700"
-          >
-            <textarea
-              name="message-content"
-              class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
-              placeholder="Type a message..."
-            ></textarea>
-            <div class="flex flex-row w-full justify-between p-2">
-              <div class="w-10 h-10"></div>
-              <div
-                class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-800 cursor-pointer"
-              >
-                <button
-                  type="submit"
-                  class="-rotate-90 translate-x-[.22rem] translate-y-[.2rem] text-3xl cursor-pointer"
-                >
-                  &#x279c;
-                </button>
-              </div>
-            </div>
-          </form>
-          {{ end }}
         </div>
       </div>
     </div>
   </body>
 </html>
+
+<!-- prettier-ignore -->
+{{ define "index_auth/chat-content" }}
+  {{ range .Messages }}
+    {{ template "index_auth/message" . }}
+  {{ end }}
+  {{ if not .Done }}
+<!-- prettier-ignore -->
+<span
+      hx-trigger="intersect once" 
+      hx-get="/rooms/{{ .RoomId }}/messages?start={{ .NextStart }}&count=20" 
+      hx-target="this" 
+      hx-swap="outerHTML"></span>
+<!-- prettier-ignore -->
+{{ end }}
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "index_auth/message" }}
+<p class="text-lg">
+  <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+  <span>{{ .Content }}</span>
+</p>
+<!-- prettier-ignore -->
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "index_auth/ws-message" -}}
+<div id="chat-content" hx-swap-oob="afterbegin">
+  <p class="text-lg">
+    <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+    <span>{{ .Content }}</span>
+  </p>
+</div>
+<!-- prettier-ignore -->
+{{- end }}
+
+{{ define "index_auth/room-response" }} 
+  {{ template "index_auth/chat-content" . }} 
+  {{ template "index_auth/send-box" . }}
+<div
+  id="ws-connector"
+  hx-swap-oob="true"
+  ws-connect="/rooms/{{ .RoomId }}/messages/ws"
+></div>
+<!-- prettier-ignore -->
+{{ end }}
+
+{{ define "index_auth/send-box" }}
+<!-- prettier-ignore -->
+<form
+  id="send-box"
+  hx-swap-oob="true"
+  hx-post="/rooms/{{ .RoomId }}/messages"
+  hx-target="#chat-content"
+  hx-swap="beforeend"
+  hx-swap-error="none"
+  hx-on::after-request="if (event.detail.successful) { this.reset() }"
+  class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700"
+>
+  <textarea
+    name="message-content"
+    class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+    placeholder="Type a message..."
+  ></textarea>
+  <div class="flex flex-row w-full justify-between p-2">
+    <div class="w-10 h-10"></div>
+    <div
+      class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-800 cursor-pointer"
+    >
+      <button
+        type="submit"
+        class="-rotate-90 translate-x-[.22rem] translate-y-[.2rem] text-3xl cursor-pointer"
+      >
+        &#x279c;
+      </button>
+    </div>
+  </div>
+</form>
+<!-- prettier-ignore -->
+{{ end }}
+
+{{ define "index_auth/room-btn" }}
+<li
+  onclick="setSelected(this)"
+  hx-get="/rooms/{{ .ID }}/messages?start=0&count=40"
+  hx-target="#chat-content"
+  hx-swap="innerHTML"
+  class="w-full px-4 py-1 mb-1 rounded-2xl bg-neutral-50 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 flex flex-row justify-between cursor-pointer border-2 border-neutral-200 dark:border-neutral-800"
+>
+  <span class="select-none">{{ .Name }}</span>
+  <div
+    class="w-[1.5rem] h-[1.5rem] rounded-full hover:bg-neutral-300 dark:hover:bg-neutral-700 text-md text-center"
+  >
+    <button class="">&#xfe19;</button>
+  </div>
+</li>
+<!-- prettier-ignore -->
+{{ end }}
+
+
+{{ define "index_auth/room-btn-response" }}
+  {{ template "index_auth/room-btn" . }} 
+  {{ template "index_auth/clear-new-room-status" }}
+<!-- prettier-ignore -->
+{{ end }} 
+
+
+{{ define "index_auth/clear-new-room-status" }}
+<p id="new-room-status" hx-swap-oob="true" class="hidden"></p>
+<!-- prettier-ignore -->
+{{ end }} 
+
+{{ define "index_auth/new-room-error" }}
+<p id="new-room-status" class="text-red-600 font-extrabold">{{ . }}</p>
+{{ end }}

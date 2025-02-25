@@ -4,15 +4,13 @@ import (
 	"database/sql"
 	"log"
 
-	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	upgrader = websocket.Upgrader{}
-	DB       *sql.DB
+	DB *sql.DB
 )
 
 func main() {
@@ -33,32 +31,22 @@ func main() {
 	e.Use(authMiddleware)
 	e.Static("/static", "./static")
 
-	err = routeRegister(e)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = routeLogin(e)
-	if err != nil {
-		log.Fatal(err)
-	}
+	e.Add(getIndex())
 
-	e.GET("/", getIndex)
+	e.Add(routeLogin())
+	e.Add(routeLogout())
+	e.Add(routeRegister())
+
 	e.Add(getRoomMessages())
-	e.Add(postRoomMessage())
-	e.POST("/rooms", postRooms)
 
-	err = routeLoginPage(e)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = routeRegisterPage(e)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = routeLogout(e)
-	if err != nil {
-		log.Fatal(err)
-	}
+	chanMap := make(map[chan string]bool)
+	e.Add(postRoomMessage(chanMap))
+	e.Add(roomWebSocket(chanMap))
+
+	e.Add(postRooms())
+
+	e.Add(routeLoginPage())
+	e.Add(routeRegisterPage())
 
 	err = e.Start(":8080")
 	if err != nil {
