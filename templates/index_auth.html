@@ -36,22 +36,10 @@
         elem.classList.remove("dark:bg-neutral-700");
         elem.classList.add("selected", "dark:bg-neutral-800");
       }
-
-      function closeWs(event) {
-        const ws = event.detail.elt["htmx-internal-data"].webSocket;
-        if (ws) {
-          ws.socket.onclose = null;
-          ws.socket.close();
-        }
-        console.log(event.detail);
-      }
     </script>
   </head>
 
-  <body
-    hx-ext="ws, response-targets, response-swap"
-    class="dark:text-white"
-  >
+  <body hx-ext="ws, response-targets, response-swap" class="dark:text-white">
     <div id="ws-connector"></div>
     <div class="flex flex-row h-screen dark:bg-neutral-800">
       <nav
@@ -200,7 +188,6 @@
   id="ws-connector"
   hx-swap-oob="true"
   ws-connect="/rooms/{{ .RoomId }}/messages/ws"
-  hx-on::oob-before-swap="closeWs(event)"
 ></div>
 <!-- prettier-ignore -->
 {{ end }}
