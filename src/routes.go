@@ -191,7 +191,7 @@ func getRoomMessages() (string, string, echo.HandlerFunc) {
 	}
 }
 
-func postRoomMessage(ch map[chan string]bool) (string, string, echo.HandlerFunc) {
+func postRoomMessage(ch map[string]chan string) (string, string, echo.HandlerFunc) {
 	return "POST", "/rooms/:id/messages", func(c echo.Context) error {
 		userName, ok := c.Get("authorized_user").(string)
 		if !ok {
@@ -215,10 +215,7 @@ func postRoomMessage(ch map[chan string]bool) (string, string, echo.HandlerFunc)
 			return c.NoContent(http.StatusBadRequest)
 		}
 
-		for cha, ok := range ch {
-			if !ok {
-				continue
-			}
+		for _, cha := range ch {
 			cha <- cont
 		}
 
@@ -235,7 +232,7 @@ func postRoomMessage(ch map[chan string]bool) (string, string, echo.HandlerFunc)
 	}
 }
 
-func roomWebSocket(ch map[chan string]bool) (string, string, echo.HandlerFunc) {
+func roomWebSocket(ch map[string]chan string) (string, string, echo.HandlerFunc) {
 	return "GET", "/rooms/:id/messages/ws", func(c echo.Context) error {
 		conHeader := c.Request().Header["Connection"]
 		if len(conHeader) != 1 || conHeader[0] != "Upgrade" {
@@ -264,13 +261,27 @@ func roomWebSocket(ch map[chan string]bool) (string, string, echo.HandlerFunc) {
 		}
 		defer ws.Close()
 
+		cookie, err := c.Cookie("auth-token")
+		if err != nil {
+			return err
+		}
+
 		cha := make(chan string)
-		ch[cha] = true
-		defer delete(ch, cha)
+		tk := cookie.Value
+		if oldChan, ok := ch[tk]; ok {
+			// delete before close so no write on closed chan from postMessage can happen
+			delete(ch, tk)
+			close(oldChan)
+		}
+		ch[tk] = cha
 
 		for msg := range cha {
 			wr, err := ws.NextWriter(websocket.TextMessage)
 			if err != nil {
+				if websocket.IsUnexpectedCloseError(err) {
+					delete(ch, tk)
+					close(cha)
+				}
 				return err
 			}
 			err = c.Echo().Renderer.Render(wr,

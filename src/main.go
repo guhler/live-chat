@@ -39,7 +39,7 @@ func main() {
 
 	e.Add(getRoomMessages())
 
-	chanMap := make(map[chan string]bool)
+	chanMap := make(map[string]chan string)
 	e.Add(postRoomMessage(chanMap))
 	e.Add(roomWebSocket(chanMap))
 
