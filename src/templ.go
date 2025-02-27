@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"html/template"
+	"reflect"
 
 	"github.com/labstack/echo/v4"
 )
@@ -27,7 +28,17 @@ func initTempl(e *echo.Echo) {
 		"arr": func(values ...any) ([]any, error) {
 			return values, nil
 		},
-	}).ParseGlob("./templates/*.html"))
+		"hasfield": func(v any, name string) bool {
+			rv := reflect.ValueOf(v)
+			if rv.Kind() == reflect.Ptr {
+				rv = rv.Elem()
+			}
+			if rv.Kind() != reflect.Struct {
+				return false
+			}
+			return rv.FieldByName(name).IsValid()
+		},
+	}).ParseGlob("../templates/*.html"))
 
 	e.Renderer = &echo.TemplateRenderer{
 		Template: tmpl,

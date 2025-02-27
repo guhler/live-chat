@@ -1,52 +1,38 @@
 package main
 
 import (
-	"database/sql"
+	"live_chat/auth"
+	"live_chat/routes"
+	"live_chat/util"
 	"log"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var (
-	DB *sql.DB
-)
-
 func main() {
-	err := initDB()
+	DB, err := util.InitDB()
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = initAuth()
-	if err != nil {
-		log.Fatal(err)
+
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		log.Fatal("please provide JWT_SECRET in env")
 	}
+	auth.Init([]byte(secret), DB)
 
 	e := echo.New()
 
 	initTempl(e)
 
 	e.Use(middleware.Logger())
-	e.Use(authMiddleware)
-	e.Static("/static", "./static")
+	e.Use(auth.TokenParser)
+	e.Static("/static", "../static")
 
-	e.Add(getIndex())
-
-	e.Add(routeLogin())
-	e.Add(routeLogout())
-	e.Add(routeRegister())
-
-	e.Add(getRoomMessages())
-
-	chanMap := make(map[string]chan string)
-	e.Add(postRoomMessage(chanMap))
-	e.Add(roomWebSocket(chanMap))
-
-	e.Add(postRooms())
-
-	e.Add(routeLoginPage())
-	e.Add(routeRegisterPage())
+	routes.AddAll(e, DB)
 
 	err = e.Start(":8080")
 	if err != nil {
