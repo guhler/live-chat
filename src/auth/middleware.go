@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"database/sql"
 	"live_chat/util"
 	"net/http"
 
@@ -41,5 +42,27 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return next(c)
+	}
+}
+
+func UserInRoomWithRoomName(db *sql.DB) func(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			userName := c.Get("authorized_user").(string)
+			roomName := c.Param("name")
+			roomId, err := util.RoomExists(db, roomName)
+			if err != nil {
+				if err == util.ERR_ROOM_NONEXISTENT {
+					return c.NoContent(http.StatusNotFound)
+				}
+				return err
+			}
+			inRoom, err := util.IsUserInRoom(db, userName, roomId)
+			if !inRoom {
+				return c.NoContent(http.StatusUnauthorized)
+			}
+			c.Set("room_id", roomId)
+			return next(c)
+		}
 	}
 }

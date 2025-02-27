@@ -22,4 +22,5 @@ func AddAll(e *echo.Echo, db *sql.DB) {
 
 	mp := sync.Map{}
 	e.Add(RoomWebsocket(db, &mp))
+	e.Add(PostRoomMessage(db, &mp))
 }

@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Live Chat</title>
+    <meta name="htmx-config" content='{"responseTargetUnsetsError": false}' />
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+    <script src="/static/hx-response-targets.js"></script>
+    <script src="/static/hx-response-swap.js"></script>
+    {{ template "sidebar/script" }}
+    <link rel="stylesheet" href="/static/output.css" />
+  </head>
+
+  <body hx-ext="ws, response-targets, response-swap" class="dark:text-white">
+    <div id="ws-connector" ws-connect="{{ .WsUrl }}"></div>
+    <div class="flex flex-row h-screen dark:bg-neutral-800">
+      <!-- prettier-ignore -->
+      {{ template "sidebar" .Sidebar }}
+      <div
+        class="flex-1 flex flex-col justify-between items-center h-full pt-3"
+      >
+        <nav class="flex flex-row justify-between w-full px-3 pb-3">
+          <div class="w-10 h-10"></div>
+          <div>
+            <h1 class="text-3xl font-bold">WIP</h1>
+          </div>
+          <div
+            hx-post="/logout"
+            title="Logout"
+            class="pl-3 pr-2 py-1 bg-neutral-200 dark:bg-neutral-700 cursor-pointer rounded-xl flex justify-center align-center"
+          >
+            <button>
+              <svg
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M14 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9" />
+                <path d="M19 12H9m5-5l5 5-5 5" />
+              </svg>
+            </button>
+          </div>
+        </nav>
+        <div
+          id="chat-content"
+          class="flex-1 flex flex-col-reverse w-full overflow-y-scroll scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
+        >
+          {{ template "room/chat-content" . }}
+        </div>
+        <div class="flex justify-center items-center w-full px-10">
+          {{ template "room/send-box" . }}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!-- prettier-ignore -->
+{{ define "room/post-response" }}
+  {{ template "sidebar/room-btn" . }}
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "room/message-response" }}
+{{ template "sidebar/room-btn" . }}
+<div id="chat-content" hx-swap-oob="afterbegin">
+  {{ template "room/chat-content" .ChatContent }}
+</div>
+<!-- prettier-ignore -->
+{{ template "room/send-box" . }}
+{{ template "sidebar/room-btn-full" 
+  (dict 
+    "RoomName" .SelectedRoomName
+    "OobSwap" "")
+}}
+<div
+  id="ws-connector"
+  hx-swap-oob="true"
+  ws-connect="/rooms/{{ .RoomName }}/messages/ws"
+></div>
+<!-- prettier-ignore -->
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "room/chat-content" }}
+<!-- prettier-ignore -->
+{{ range .Messages }}
+    {{ template "room/message" . }}
+  {{ end }}
+  {{ if not .Done }}
+<span
+  hx-trigger="intersect once"
+  hx-get="/rooms/{{ .RoomName }}/messages?start={{ .NextStart }}&count=20"
+  hx-target="this"
+  hx-swap="outerHTML"
+></span>
+<!-- prettier-ignore -->
+{{ end }}
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "room/message" }}
+<p class="text-lg">
+  <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+  <span>{{ .Content }}</span>
+</p>
+<!-- prettier-ignore -->
+{{ end }}
+
+<!-- prettier-ignore -->
+{{ define "room/ws-message" }}
+<div id="chat-content" hx-swap-oob="afterbegin">
+  <p class="text-lg">
+    <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+    <span>{{ .Content }}</span>
+  </p>
+</div>
+<!-- prettier-ignore -->
+{{ end }}
+
+{{ define "room/send-box" }}
+<!-- prettier-ignore -->
+<form
+  id="send-box"
+  hx-swap-oob="true"
+  hx-post="/rooms/{{ .RoomName }}/messages"
+  hx-target="#chat-content"
+  hx-swap="beforeend"
+  hx-swap-error="none"
+  hx-on::after-request="if (event.detail.successful) { this.reset() }"
+  class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700"
+>
+  <textarea
+    name="message-content"
+    class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+    placeholder="Type a message..."
+  ></textarea>
+  <div class="flex flex-row w-full justify-between p-2">
+    <div class="w-10 h-10"></div>
+    <div
+      class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-800 cursor-pointer"
+    >
+      <button
+        type="submit"
+        class="-rotate-90 translate-x-[.22rem] translate-y-[.2rem] text-3xl cursor-pointer"
+      >
+        &#x279c;
+      </button>
+    </div>
+  </div>
+</form>
+<!-- prettier-ignore -->
+{{ end }}
