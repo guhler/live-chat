@@ -17,11 +17,6 @@ func InitDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func AddUser(db *sql.DB, name string, password string) error {
-	_, err := db.Exec("insert into users (name, password) values (?, ?)", name, password)
-	return err
-}
-
 func LogoutUser(db *sql.DB, name string) error {
 	_, err := db.Exec("update users set logout_time = datetime('now') where name = ?", name)
 	return err
@@ -125,23 +120,4 @@ func GetRoomsOfUser(db *sql.DB, userName string) ([]string, error) {
 		roomNames = append(roomNames, room)
 	}
 	return roomNames, nil
-}
-
-const (
-	USER_DOES_NOT_EXIST = iota
-	INVALID_PASSWORD
-	OK
-)
-
-func ValidateCredentials(db *sql.DB, name, password string) int {
-	row := db.QueryRow("select password from users where name = ?", name)
-	passwd := ""
-	err := row.Scan(&passwd)
-	if err != nil {
-		return USER_DOES_NOT_EXIST
-	}
-	if password != passwd {
-		return INVALID_PASSWORD
-	}
-	return OK
 }

@@ -2,7 +2,7 @@
 create table users (
     id integer primary key autoincrement,
     name text unique not null check (length(name) > 2 and length(name) <= 32),
-    password text not null,
+    password_hash text not null,
     logout_time datetime default current_timestamp
 );
 

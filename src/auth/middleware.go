@@ -30,7 +30,6 @@ func TokenParser(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		c.Set("authorized_user", username)
-
 		return next(c)
 	}
 }
@@ -38,7 +37,11 @@ func TokenParser(next echo.HandlerFunc) echo.HandlerFunc {
 func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	return TokenParser(func(c echo.Context) error {
 		if _, ok := c.Get("authorized_user").(string); !ok {
-			c.Response().Header().Add("HX-Redirect", "/login")
+			c.SetCookie(&http.Cookie{
+				Name:   "auth-token",
+				Path:   "/",
+				MaxAge: -1,
+			})
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return next(c)

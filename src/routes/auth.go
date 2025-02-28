@@ -24,29 +24,29 @@ func GetRegisterPage() (string, string, echo.HandlerFunc) {
 
 func Register(db *sql.DB) (string, string, echo.HandlerFunc) {
 	return "POST", "/register", func(c echo.Context) error {
-		var regReq struct {
+		var user struct {
 			Name     string `form:"username"`
 			Password string `form:"password"`
 		}
-		err := c.Bind(&regReq)
+		err := c.Bind(&user)
 		if err != nil {
 			return c.NoContent(http.StatusBadRequest)
 		}
 
-		if err := util.ValidateUserName(regReq.Name); err != nil {
+		if err := util.ValidateUserName(user.Name); err != nil {
 			return c.HTML(
 				http.StatusBadRequest,
 				err.Error(),
 			)
 		}
-		if err := util.ValidatePassword(regReq.Password); err != nil {
+		if err := util.ValidatePassword(user.Password); err != nil {
 			return c.HTML(
 				http.StatusBadRequest,
 				err.Error(),
 			)
 		}
 
-		err = util.AddUser(db, regReq.Name, regReq.Password)
+		err = auth.HashAndStoreUser(user.Name, user.Password)
 		if err != nil {
 			if sqliteErr, ok := err.(sqlite3.Error); ok &&
 				sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -58,7 +58,66 @@ func Register(db *sql.DB) (string, string, echo.HandlerFunc) {
 			return err
 		}
 
-		tk, err := auth.GenToken(regReq.Name)
+		tk, err := auth.GenToken(user.Name)
+		if err != nil {
+			return err
+		}
+		c.SetCookie(&http.Cookie{
+			Name:     "auth-token",
+			Value:    tk,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
+		c.Response().Header().Add("HX-Redirect", "/rooms")
+
+		return c.HTML(
+			http.StatusCreated,
+			"User created",
+		)
+	}
+}
+
+func Login(db *sql.DB) (string, string, echo.HandlerFunc) {
+	return "POST", "/login", func(c echo.Context) error {
+		var user struct {
+			Name     string `form:"username"`
+			Password string `form:"password"`
+		}
+		err := c.Bind(&user)
+		if err != nil {
+			return c.NoContent(http.StatusBadRequest)
+		}
+
+		if util.ValidateUserName(user.Name) != nil {
+			return c.Render(
+				http.StatusNotFound,
+				"login/error",
+				"User does not exist",
+			)
+		}
+		if util.ValidatePassword(user.Password) != nil {
+			return c.Render(
+				http.StatusUnauthorized,
+				"login/error",
+				"Invalid password",
+			)
+		}
+
+		ok, err := auth.IsPasswordCorrect(user.Name, user.Password)
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return c.Render(
+				http.StatusUnauthorized,
+				"login/error",
+				"Invalid password",
+			)
+		}
+		tk, err := auth.GenToken(user.Name)
 		if err != nil {
 			return err
 		}
@@ -71,70 +130,7 @@ func Register(db *sql.DB) (string, string, echo.HandlerFunc) {
 			SameSite: http.SameSiteStrictMode,
 		})
 		c.Response().Header().Add("HX-Redirect", "/")
-
-		return c.HTML(
-			http.StatusCreated,
-			"User created",
-		)
-	}
-}
-
-func Login(db *sql.DB) (string, string, echo.HandlerFunc) {
-	return "POST", "/login", func(c echo.Context) error {
-		var logReq struct {
-			Name     string `form:"username"`
-			Password string `form:"password"`
-		}
-		err := c.Bind(&logReq)
-		if err != nil {
-			return c.NoContent(http.StatusBadRequest)
-		}
-
-		if util.ValidateUserName(logReq.Name) != nil {
-			return c.Render(
-				http.StatusNotFound,
-				"login/error",
-				"User does not exist",
-			)
-		}
-		if util.ValidatePassword(logReq.Password) != nil {
-			return c.Render(
-				http.StatusUnauthorized,
-				"login/error",
-				"Invalid password",
-			)
-		}
-
-		switch util.ValidateCredentials(db, logReq.Name, logReq.Password) {
-		case util.USER_DOES_NOT_EXIST:
-			return c.Render(
-				http.StatusNotFound,
-				"login/error",
-				"User does not exist",
-			)
-		case util.INVALID_PASSWORD:
-			return c.Render(
-				http.StatusUnauthorized,
-				"login/error",
-				"Invalid password",
-			)
-		case util.OK:
-			tk, err := auth.GenToken(logReq.Name)
-			if err != nil {
-				return err
-			}
-			c.SetCookie(&http.Cookie{
-				Name:     "auth-token",
-				Value:    tk,
-				Path:     "/",
-				HttpOnly: true,
-				Secure:   true,
-				SameSite: http.SameSiteStrictMode,
-			})
-			c.Response().Header().Add("HX-Redirect", "/")
-			return c.String(http.StatusOK, "")
-		}
-		return nil
+		return c.NoContent(http.StatusOK)
 	}
 }
 

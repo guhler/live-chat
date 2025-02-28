@@ -1,22 +1,10 @@
 package auth
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-var (
-	jwtSecret         []byte
-	token_expiry_time = time.Hour * 4
-	DB                *sql.DB
-)
-
-func Init(secret []byte, db *sql.DB) {
-	jwtSecret = secret
-	DB = db
-}
 
 func GenToken(username string) (string, error) {
 	tk := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
