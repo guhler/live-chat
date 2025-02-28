@@ -3,6 +3,7 @@ package routes
 import (
 	"database/sql"
 	"live_chat/auth"
+	"live_chat/templ"
 	"net/http"
 	"sync"
 
@@ -15,7 +16,7 @@ type messageMapKey struct {
 	uint64
 }
 type messageMapVal struct {
-	ch    chan message
+	ch    chan templ.Message
 	close func()
 }
 
@@ -30,7 +31,7 @@ func PostRoomMessage(db *sql.DB, chMap *sync.Map) (string, string, echo.HandlerF
 		}
 
 		for _, cha := range chMap.Range {
-			cha.(messageMapVal).ch <- message{UserName: userName, Content: cont}
+			cha.(messageMapVal).ch <- templ.Message{UserName: userName, Content: cont}
 		}
 
 		_, err := db.Exec(`
@@ -71,9 +72,12 @@ func RoomWebsocket(db *sql.DB, chMap *sync.Map) (string, string, echo.HandlerFun
 			return err
 		}
 
-		cha := make(chan message)
+		cha := make(chan templ.Message)
 		tk := cookie.Value
-		oldChan, ok := chMap.Swap(messageMapKey{tk, roomId}, messageMapVal{cha, sync.OnceFunc(func() { close(cha) })})
+		oldChan, ok := chMap.Swap(
+			messageMapKey{tk, roomId},
+			messageMapVal{cha, sync.OnceFunc(func() { close(cha) })},
+		)
 		if ok {
 			oldChan.(messageMapVal).close()
 		}

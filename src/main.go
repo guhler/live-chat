@@ -3,6 +3,7 @@ package main
 import (
 	"live_chat/auth"
 	"live_chat/routes"
+	"live_chat/templ"
 	"live_chat/util"
 	"log"
 	"os"
@@ -26,7 +27,7 @@ func main() {
 
 	e := echo.New()
 
-	initTempl(e)
+	templ.InitTempl(e)
 
 	e.Use(middleware.Logger())
 	e.Use(auth.TokenParser)

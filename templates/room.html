@@ -33,7 +33,7 @@
             title="Logout"
             class="pl-3 pr-2 py-1 bg-neutral-200 dark:bg-neutral-700 cursor-pointer rounded-xl flex justify-center align-center"
           >
-            <button>
+            <button class="cursor-pointer">
               <svg
                 width="32"
                 height="32"
@@ -66,12 +66,7 @@
 {{ end }}
 
 <!-- prettier-ignore -->
-{{ define "room/message-response" }}
-{{ template "room/message-list" .ChatContent }}
-{{ end }}
-
-<!-- prettier-ignore -->
-{{ define "room/message-response-initial" }}
+{{ define "room/switch-room" }}
 {{ template "room/chat-content" .ChatContent }}
 {{ template "room/send-box" . }}
 <div

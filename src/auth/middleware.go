@@ -36,13 +36,13 @@ func TokenParser(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return TokenParser(func(c echo.Context) error {
 		if _, ok := c.Get("authorized_user").(string); !ok {
 			c.Response().Header().Add("HX-Redirect", "/login")
 			return c.NoContent(http.StatusUnauthorized)
 		}
 		return next(c)
-	}
+	})
 }
 
 func UserInRoomWithRoomName(db *sql.DB) func(next echo.HandlerFunc) echo.HandlerFunc {

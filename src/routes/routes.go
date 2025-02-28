@@ -18,6 +18,7 @@ func AddAll(e *echo.Echo, db *sql.DB) {
 
 	e.Add(GetLoginPage())
 	e.Add(Login(db))
+	e.Add(Logout(db))
 	e.Add(GetRegisterPage())
 	e.Add(Register(db))
 

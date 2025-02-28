@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"live_chat/auth"
+	"live_chat/templ"
 	"live_chat/util"
 	"net/http"
 	"strconv"
@@ -26,12 +27,12 @@ func GetRoomsPage(db *sql.DB) (string, string, echo.HandlerFunc, echo.Middleware
 			return err
 		}
 
-		page := make(roomsPage, len(roomsStr))
+		page := make(templ.RoomsPage, len(roomsStr))
 		for i, s := range roomsStr {
 			page[i] = struct{ RoomName string }{s}
 		}
 
-		return c.Render(http.StatusOK, "rooms.html", page)
+		return templ.RenderRoomsPage(c, http.StatusOK, page)
 	}, auth.RequireAuth
 }
 
@@ -44,20 +45,20 @@ func GetRoomPage(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareF
 		if err != nil {
 			return err
 		}
-		sidebar := make(sidebar, len(roomNames))
+		sidebar := make(templ.Sidebar, len(roomNames))
 		for i, s := range roomNames {
-			sidebar[i] = roomButton{RoomName: s, Selected: s == roomName}
+			sidebar[i] = templ.RoomButton{RoomName: s, Selected: s == roomName}
 		}
 
 		msgs, err := util.GetMessages(db, roomName, 0, int64(INITIAL_MSGS))
 		if err != nil {
 			return err
 		}
-		messages := make([]message, len(msgs))
+		messages := make([]templ.Message, len(msgs))
 		for i, s := range msgs {
-			messages[i] = message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
+			messages[i] = templ.Message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
 		}
-		return c.Render(http.StatusOK, "room.html", roomPage{
+		return templ.RenderRoomPage(c, http.StatusOK, templ.RoomPage{
 			RoomName:  roomName,
 			Sidebar:   sidebar,
 			WsUrl:     fmt.Sprintf("/rooms/%s/messages/ws", roomName),
@@ -95,7 +96,8 @@ func PostRoom(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc
 		if err != nil {
 			return err
 		}
-		return c.Render(http.StatusCreated, "room/post-response", roomButton{RoomName: roomName, Selected: false})
+
+		return templ.RenderRoomBtn(c, http.StatusCreated, templ.RoomButton{RoomName: roomName, Selected: false})
 	}, auth.RequireAuth
 }
 
@@ -117,25 +119,27 @@ func GetRoomMessages(db *sql.DB) (string, string, echo.HandlerFunc, echo.Middlew
 		if err != nil {
 			return err
 		}
-		messages := make([]message, len(msgs))
+		messages := make([]templ.Message, len(msgs))
 		for i, s := range msgs {
-			messages[i] = message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
+			messages[i] = templ.Message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
 		}
 
-		template := "room/message-response"
 		if c.QueryParam("initial") == "true" {
-			template = "room/message-response-initial"
+			return templ.RenderSwitchRoom(c, http.StatusOK, templ.SwitchRoom{
+				RoomName: roomName,
+				ChatContent: templ.MessageList{
+					RoomName:  roomName,
+					Messages:  messages,
+					Done:      len(messages) < count,
+					NextStart: start + count,
+				},
+			})
 		}
-
-		return c.Render(http.StatusOK, template, messageResponse{
-			RoomName: roomName,
-			Selected: true,
-			ChatContent: chatContent{
-				RoomName:  roomName,
-				Messages:  messages,
-				Done:      len(messages) < count,
-				NextStart: start + count,
-			},
+		return templ.RenderMessageList(c, http.StatusOK, templ.MessageList{
+			RoomName:  roomName,
+			Messages:  messages,
+			Done:      len(messages) < count,
+			NextStart: start + count,
 		})
 	}, auth.RequireAuth, auth.UserInRoomWithRoomName(db)
 }

@@ -1,3 +1,3 @@
-- [ ] make page for /rooms
+- [x] make page for /rooms
 - [ ] store passwords in hashed form
 - [ ] room invitations

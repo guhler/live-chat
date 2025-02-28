@@ -1,4 +1,4 @@
-package main
+package templ
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func initTempl(e *echo.Echo) {
+func InitTempl(e *echo.Echo) {
 
 	tmpl := template.Must(template.New("").Funcs(template.FuncMap{
 		"dict": func(values ...any) (map[string]any, error) {
