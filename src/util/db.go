@@ -80,7 +80,7 @@ func GetMessages(db *sql.DB, roomName string, start, count int64) ([][2]string, 
 		from messages
 		join users on messages.user_id = users.id
 		where messages.room_id = (select id from rooms where name = ?)
-		order by messages.time
+		order by messages.time desc
 		limit ? offset ?`,
 		roomName, count, start,
 	)

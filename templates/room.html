@@ -12,7 +12,10 @@
     <link rel="stylesheet" href="/static/output.css" />
   </head>
 
-  <body hx-ext="ws, response-targets, response-swap" class="dark:text-white">
+  <body
+    hx-ext="ws, response-targets, response-swap"
+    class="text-black dark:text-white"
+  >
     <div id="ws-connector" ws-connect="{{ .WsUrl }}"></div>
     <div class="flex flex-row h-screen dark:bg-neutral-800">
       <!-- prettier-ignore -->
@@ -48,12 +51,7 @@
             </button>
           </div>
         </nav>
-        <div
-          id="chat-content"
-          class="flex-1 flex flex-col-reverse w-full overflow-y-scroll scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
-        >
-          {{ template "room/chat-content" . }}
-        </div>
+        {{ template "room/chat-content" . }}
         <div class="flex justify-center items-center w-full px-10">
           {{ template "room/send-box" . }}
         </div>
@@ -69,17 +67,13 @@
 
 <!-- prettier-ignore -->
 {{ define "room/message-response" }}
-{{ template "sidebar/room-btn" . }}
-<div id="chat-content" hx-swap-oob="afterbegin">
-  {{ template "room/chat-content" .ChatContent }}
-</div>
+{{ template "room/message-list" .ChatContent }}
+{{ end }}
+
 <!-- prettier-ignore -->
+{{ define "room/message-response-initial" }}
+{{ template "room/chat-content" .ChatContent }}
 {{ template "room/send-box" . }}
-{{ template "sidebar/room-btn-full" 
-  (dict 
-    "RoomName" .SelectedRoomName
-    "OobSwap" "")
-}}
 <div
   id="ws-connector"
   hx-swap-oob="true"
@@ -90,6 +84,16 @@
 
 <!-- prettier-ignore -->
 {{ define "room/chat-content" }}
+<div
+  id="chat-content"
+  class="flex-1 flex flex-col-reverse w-full gap-1 px-10 py-5 overflow-y-auto scrollbar-thin dark:scrollbar-thumb-neutral-700 dark:scrollbar-track-neutral-800"
+>
+  {{ template "room/message-list" . }}
+</div>
+<!-- prettier-ignore -->
+{{ end }}
+
+{{ define "room/message-list" }}
 <!-- prettier-ignore -->
 {{ range .Messages }}
     {{ template "room/message" . }}
@@ -107,54 +111,88 @@
 
 <!-- prettier-ignore -->
 {{ define "room/message" }}
-<p class="text-lg">
-  <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
-  <span>{{ .Content }}</span>
-</p>
+<div
+  class="{{ if .IsOwn }}justify-end rounded-r-lg{{ else }}rounded-l-lg{{ end }} flex hover:bg-neutral-300 hover:dark:bg-neutral-600"
+>
+  <p
+    class="w-max text-lg px-4 py-2 rounded-lg bg-neutral-200 dark:bg-neutral-700"
+  >
+    <!-- prettier-ignore -->
+    {{ if not .IsOwn }}
+    <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
+    <!-- prettier-ignore -->
+    {{ end }}
+    <span class="whitespace-pre-wrap">{{ .Content }}</span>
+  </p>
+</div>
 <!-- prettier-ignore -->
 {{ end }}
 
 <!-- prettier-ignore -->
 {{ define "room/ws-message" }}
 <div id="chat-content" hx-swap-oob="afterbegin">
-  <p class="text-lg">
-    <span class="text-neutral-400">{{ .UserName }}:&nbsp;</span>
-    <span>{{ .Content }}</span>
-  </p>
+  {{ template "room/message" . }}
 </div>
 <!-- prettier-ignore -->
 {{ end }}
 
 {{ define "room/send-box" }}
-<!-- prettier-ignore -->
-<form
+<div
   id="send-box"
   hx-swap-oob="true"
-  hx-post="/rooms/{{ .RoomName }}/messages"
-  hx-target="#chat-content"
-  hx-swap="beforeend"
-  hx-swap-error="none"
-  hx-on::after-request="if (event.detail.successful) { this.reset() }"
   class="flex flex-col mb-20 w-full lg:w-[38rem] h-32 rounded-xl bg-neutral-200 dark:bg-neutral-700"
 >
-  <textarea
-    name="message-content"
-    class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
-    placeholder="Type a message..."
-  ></textarea>
-  <div class="flex flex-row w-full justify-between p-2">
-    <div class="w-10 h-10"></div>
+  <form
+    hx-post="/rooms/{{ .RoomName }}/messages"
+    hx-trigger="click from:#send-btn"
+    hx-target="#chat-content"
+    hx-swap="beforeend"
+    hx-on::after-request="if (event.detail.successful) { this.reset() }"
+  >
+    <textarea
+      name="message-content"
+      class="flex-1 w-full p-2 rounded-t-xl resize-none focus:outline-none bg-neutral-200 dark:bg-neutral-700"
+      placeholder="Type a message..."
+    ></textarea>
+  </form>
+  <div class="flex flex-row gap-1 w-full justify-end p-2">
     <div
-      class="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-300 text-neutral-800 cursor-pointer"
+      class="w-10 h-10 rounded-full bg-black dark:bg-neutral-300 text-neutral-800 text-white dark:text-black cursor-pointer"
     >
       <button
-        type="submit"
-        class="-rotate-90 translate-x-[.22rem] translate-y-[.2rem] text-3xl cursor-pointer"
+        class="flex justify-center items-center w-full h-full cursor-pointer"
+      >
+        <svg
+          width="30"
+          height="30"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="7" r="4" />
+          <g stroke-linecap="butt">
+            <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+          </g>
+          <g stroke-linecap="round">
+            <line x1="20" y1="8" x2="20" y2="14" />
+            <line x1="17" y1="11" x2="23" y2="11" />
+          </g>
+        </svg>
+      </button>
+    </div>
+    <div
+      class="w-10 h-10 rounded-full bg-black dark:bg-neutral-300 text-white dark:text-neutral-800 cursor-pointer"
+    >
+      <button
+        id="send-btn"
+        class="-rotate-90 translate-x-[.22rem] translate-y-[.1rem] text-3xl cursor-pointer"
       >
         &#x279c;
       </button>
     </div>
   </div>
-</form>
+</div>
 <!-- prettier-ignore -->
 {{ end }}

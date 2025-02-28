@@ -3,6 +3,7 @@ package routes
 type message struct {
 	UserName string
 	Content  string
+	IsOwn    bool
 }
 
 // pages
@@ -17,10 +18,9 @@ type roomPage struct {
 
 // responses
 type messageResponse struct {
-	RoomName         string
-	Selected         bool
-	SelectedRoomName string
-	ChatContent      chatContent
+	RoomName    string
+	Selected    bool
+	ChatContent chatContent
 }
 
 type postResponse struct {

@@ -38,7 +38,7 @@ func GetRoomPage(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareF
 		}
 		messages := make([]message, len(msgs))
 		for i, s := range msgs {
-			messages[i] = message{s[0], s[1]}
+			messages[i] = message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
 		}
 		return c.Render(http.StatusOK, "room.html", roomPage{
 			RoomName:  roomName,
@@ -84,6 +84,7 @@ func PostRoom(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc
 
 func GetRoomMessages(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc, echo.MiddlewareFunc) {
 	return "GET", "/rooms/:name/messages", func(c echo.Context) error {
+		userName := c.Get("authorized_user")
 		roomName := c.Param("name")
 
 		start, err := strconv.Atoi(c.QueryParam("start"))
@@ -101,15 +102,17 @@ func GetRoomMessages(db *sql.DB) (string, string, echo.HandlerFunc, echo.Middlew
 		}
 		messages := make([]message, len(msgs))
 		for i, s := range msgs {
-			messages[i] = message{UserName: s[0], Content: s[1]}
+			messages[i] = message{UserName: s[0], Content: s[1], IsOwn: s[0] == userName}
 		}
 
-		fmt.Println(c.Request())
+		template := "room/message-response"
+		if c.QueryParam("initial") == "true" {
+			template = "room/message-response-initial"
+		}
 
-		return c.Render(http.StatusOK, "room/message-response", messageResponse{
-			RoomName:         roomName,
-			Selected:         true,
-			SelectedRoomName: "",
+		return c.Render(http.StatusOK, template, messageResponse{
+			RoomName: roomName,
+			Selected: true,
 			ChatContent: chatContent{
 				RoomName:  roomName,
 				Messages:  messages,

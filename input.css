@@ -1,2 +1,6 @@
 @import "tailwindcss";
 @plugin "tailwind-scrollbar";
+
+.selected {
+    @apply bg-neutral-200 dark:bg-neutral-800
+}

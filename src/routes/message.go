@@ -57,6 +57,7 @@ func RoomWebsocket(db *sql.DB, chMap *sync.Map) (string, string, echo.HandlerFun
 			return c.NoContent(http.StatusUpgradeRequired)
 		}
 
+		userName := c.Get("authorized_user")
 		roomId := c.Get("room_id").(uint64)
 
 		ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -78,6 +79,7 @@ func RoomWebsocket(db *sql.DB, chMap *sync.Map) (string, string, echo.HandlerFun
 		}
 
 		for msg := range cha {
+			msg.IsOwn = msg.UserName == userName
 			wr, err := ws.NextWriter(websocket.TextMessage)
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err) {
@@ -91,7 +93,7 @@ func RoomWebsocket(db *sql.DB, chMap *sync.Map) (string, string, echo.HandlerFun
 			}
 			err = c.Echo().Renderer.Render(
 				wr,
-				"index_auth/ws-message",
+				"room/ws-message",
 				msg,
 				c,
 			)
