@@ -18,6 +18,23 @@ var (
 	upgrader     = websocket.Upgrader{}
 )
 
+func GetRoomsPage(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc) {
+	return "GET", "/rooms", func(c echo.Context) error {
+		userName := c.Get("authorized_user").(string)
+		roomsStr, err := util.GetRoomsOfUser(db, userName)
+		if err != nil {
+			return err
+		}
+
+		page := make(roomsPage, len(roomsStr))
+		for i, s := range roomsStr {
+			page[i] = struct{ RoomName string }{s}
+		}
+
+		return c.Render(http.StatusOK, "rooms.html", page)
+	}, auth.RequireAuth
+}
+
 func GetRoomPage(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc, echo.MiddlewareFunc) {
 	return "GET", "/rooms/:name", func(c echo.Context) error {
 		userName := c.Get("authorized_user").(string)

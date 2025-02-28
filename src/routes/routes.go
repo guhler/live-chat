@@ -11,6 +11,7 @@ func AddAll(e *echo.Echo, db *sql.DB) {
 
 	e.Add(GetIndex(db))
 
+	e.Add(GetRoomsPage(db))
 	e.Add(GetRoomPage(db))
 	e.Add(GetRoomMessages(db))
 	e.Add(PostRoom(db))

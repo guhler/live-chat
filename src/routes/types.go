@@ -7,6 +7,10 @@ type message struct {
 }
 
 // pages
+type roomsPage []struct {
+	RoomName string
+}
+
 type roomPage struct {
 	RoomName  string
 	Sidebar   sidebar
