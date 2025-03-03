@@ -1,26 +1,29 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <title>Login - Live Chat</title>
-    <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}' />
+    <meta
+      name="htmx-config"
+      content='{"responseHandling": [{"code":".*", "swap": true}]}'
+    />
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-</head>
+  </head>
 
-<body>
+  <body>
     <h1>Login</h1>
     <form hx-post="/login" hx-swap="none">
-        <label for="username-input">User Name</label>
-        <input id="username-input" type="text" name="username">
-        <br>
-        <label for="password-input">Password</label>
-        <input id="password-input" type="text" name="password">
-        <br>
-        <button>Submit</button>
-        {{ block "login/error" . }}
-        <p id="status" hx-swap-oob="true">{{ . }}</p>
-        {{ end }}
+      <label for="username-input">User Name</label>
+      <input id="username-input" type="text" name="username" />
+      <br />
+      <label for="password-input">Password</label>
+      <input id="password-input" type="text" name="password" />
+      <br />
+      <button>Submit</button>
+      <p id="status"></p>
     </form>
-</body>
-
+  </body>
 </html>
+
+{{ define "login/error" }}
+<p id="status" hx-swap-oob="true">{{ . }}</p>
+{{ end }}

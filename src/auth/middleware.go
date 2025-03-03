@@ -42,7 +42,7 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 				Path:   "/",
 				MaxAge: -1,
 			})
-			return c.NoContent(http.StatusUnauthorized)
+			return c.Redirect(http.StatusFound, "/login")
 		}
 		return next(c)
 	})
@@ -62,7 +62,7 @@ func UserInRoomWithRoomName(db *sql.DB) func(next echo.HandlerFunc) echo.Handler
 			}
 			inRoom, err := util.IsUserInRoom(db, userName, roomId)
 			if !inRoom {
-				return c.NoContent(http.StatusUnauthorized)
+				return c.Redirect(http.StatusFound, "/login")
 			}
 			c.Set("room_id", roomId)
 			return next(c)
