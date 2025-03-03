@@ -10,12 +10,23 @@
     <script src="/static/hx-response-swap.js"></script>
     <link rel="stylesheet" href="/static/output.css" />
   </head>
-  <body class="h-screen text-black dark:text-white">
+  <body
+    hx-ext="response-targets, response-swap"
+    class="h-screen text-black dark:text-white"
+  >
     <div class="w-full h-full dark:bg-neutral-900 px-100 py-10">
       <ul class="h-full flex flex-col gap-1 overflow-y-auto">
-        <li class="w-full">
-          <div
-            class="flex flex-row justify-between border-2 rounded-l-full rounded-r-full pl-6 pr-3 text-xl cursor-pointer hover:bg-neutral-200 border-neutral-400 dark:bg-neutral-700 dark:hover:bg-neutral-800 dark:border-neutral-800"
+        <li
+          class="w-full border-2 rounded-l-full rounded-r-full pl-6 pr-3 text-xl cursor-pointer hover:bg-neutral-200 border-neutral-400 dark:bg-neutral-700 dark:hover:bg-neutral-800 dark:border-neutral-800"
+        >
+          <form
+            hx-post="/rooms"
+            hx-target="closest ul"
+            hx-swap="beforeend"
+            hx-target-error="#new-room-status"
+            hx-swap-error="outerHTML"
+            hx-on::after-request="if (event.detail.successful) { this.reset() }"
+            class="flex flex-row justify-between"
           >
             <input
               type="text"
@@ -33,7 +44,8 @@
                 &#xff0b;
               </button>
             </div>
-          </div>
+          </form>
+          <p id="new-room-status"></p>
         </li>
         <!-- prettier-ignore -->
         {{ range . }}

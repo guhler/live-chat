@@ -80,14 +80,14 @@ func PostRoom(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc
 		roomName := c.FormValue("room-name")
 
 		if err := util.ValidateRoomName(roomName); err != nil {
-			return c.Render(http.StatusBadRequest, "index_auth/new-room-error", err.Error())
+			return templ.RenderNewRoomError(c, http.StatusBadRequest, err.Error())
 		}
 
 		roomId, err := util.AddRoom(db, roomName)
 		if err != nil {
 			if sqliteErr, ok := err.(sqlite3.Error); ok &&
 				sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-				return c.Render(http.StatusConflict, "index_auth/new-room-error", "Room already exists")
+				return templ.RenderNewRoomError(c, http.StatusConflict, "room already exists")
 			}
 			return err
 		}
@@ -97,7 +97,14 @@ func PostRoom(db *sql.DB) (string, string, echo.HandlerFunc, echo.MiddlewareFunc
 			return err
 		}
 
-		return templ.RenderRoomBtn(c, http.StatusCreated, templ.RoomButton{RoomName: roomName, Selected: false})
+		return templ.RenderRoomBtn(c,
+			http.StatusCreated,
+			templ.RoomButton{
+				RoomName:   roomName,
+				Selected:   false,
+				CurrentUrl: c.Request().Header.Get("HX-Current-Url"),
+			},
+		)
 	}, auth.RequireAuth
 }
 

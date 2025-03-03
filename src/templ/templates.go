@@ -1,6 +1,8 @@
 package templ
 
 import (
+	"strings"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -15,6 +17,11 @@ var (
 	RenderRoomPage     = renderFunc[RoomPage]("room.html")
 	RenderSwitchRoom   = renderFunc[SwitchRoom]("room/switch-room")
 	RenderMessageList  = renderFunc[MessageList]("room/message-list")
-	RenderRoomBtn      = renderFunc[RoomButton]("sidebar/room-btn")
 	RenderNewRoomError = renderFunc[string]("sidebar/new-room-error")
+	RenderRoomBtn      = func(c echo.Context, status int, data RoomButton) error {
+		if strings.HasSuffix(data.CurrentUrl, "/rooms") {
+			return c.Render(status, "rooms/li", data)
+		}
+		return c.Render(status, "sidebar/room-btn", data)
+	}
 )

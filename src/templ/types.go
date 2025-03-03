@@ -18,8 +18,9 @@ type RoomPage struct {
 type Sidebar []RoomButton
 
 type RoomButton struct {
-	RoomName string
-	Selected bool
+	RoomName   string
+	Selected   bool
+	CurrentUrl string
 }
 
 type SwitchRoom struct {

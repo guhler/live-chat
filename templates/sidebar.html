@@ -1,10 +1,5 @@
 <!-- prettier-ignore -->
 {{ define "sidebar/script" }}
-<style>
-  .selected {
-    background-color:;
-  }
-</style>
 <script>
   function toggleNav(elem) {
     const nav = document.getElementById("sidebar");
@@ -34,7 +29,9 @@
     class="w-full h-min mt-1 mb-2 flex justify-around items-center overflow-x-visible"
   >
     <div class="w-10 h-10"></div>
-    <h2 class="w-min text-2xl font-bold">Rooms</h2>
+    <h2 class="w-min text-2xl font-bold">
+      <a class="no-underline cursor-pointer text-white" href="/rooms">Rooms</a>
+    </h2>
     <div class="w-10 h-10"></div>
   </div>
 
